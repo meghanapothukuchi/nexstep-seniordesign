@@ -64,7 +64,7 @@ CARRIERS = {
 
 NUM_STATES = 48 # AL = 0, AR = 1, AZ = 2, ...
 NUM_CARRIERS = 7 # Averitt = 0, Dohrn = 1, Estes = 2, ...
-NUM_PARAMS = 3 # Accessorials = 0, Claims = 1, Freight = 2, ...
+NUM_PARAMS = 4 # Accessorials = 0, Claims = 1, Freight = 2, ...
 
 scores = np.loadtxt('output/scores_3d_array.txt').reshape((NUM_STATES, NUM_CARRIERS, NUM_PARAMS))
 
@@ -77,7 +77,6 @@ def calculate_score(state, weight):
     state_idx = STATES[state]
 
     accessorials_weight = 1.0
-    # claims_weight = 1.0
     freight_cost_weight = 1.0
 
     res = 'State: {}\t\tInput Weight: {}lbs\n'.format(state, weight)
@@ -99,12 +98,20 @@ def calculate_score(state, weight):
     res_scores.sort(key=lambda x: x[1])
     for carrier, score in res_scores:
         claims_score = 0 if scores[state_idx, carrier, 1] == -1 else scores[state_idx, carrier, 1]
+        transit_time_score = 0 if scores[state_idx, carrier, 3] == -1 else scores[state_idx, carrier, 3]
+
         if score != -1:
-            res += 'Carrier: {}\t\tScore: {}'.format(CARRIERS[carrier], score)
-            if claims_score > 0:
-                res += '\t\tWARNING: {} claims in the past.\n'.format(int(claims_score))
+            if carrier == 0:
+                res += 'Carrier: {}\tScore: {}'.format(CARRIERS[carrier], score)
             else:
-                res += '\n'
+                res += 'Carrier: {}\t\tScore: {}'.format(CARRIERS[carrier], score)
+            if claims_score > 0:
+                res += '\tWARNING: {} claims in the past.'.format(int(claims_score))
+
+            if transit_time_score < 85:
+                res += '\tWARNING: Historically late deliveries.'
+
+            res += '\n'
         else:
             res += 'Carrier: {}\t\tNo existing freight/lb cost data\n'.format(CARRIERS[carrier])
         
