@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import scores from './data/scores_3d_array.json'
+import customerPref from './data/customer_pref.json'
 import './App.css';
 
 const STATES = {
@@ -82,28 +83,52 @@ function customSort(a, b) {
   }
 }
 
+function getCustomerPref(customerNum) {
+  return customerPref.find((customer) => {
+    return customer.CustomerNo === parseInt(customerNum);
+  })
+}
+
 function App() {
   const [state, setState] = useState('')
   const [weight, setWeight] = useState(0.0)
   const [result, setResult] = useState('')
+  const [customerNo, setCustomerNo] = useState(-1)
+  const [memo, setMemo] = useState('')
 
   const onStateChange = (e) => {
     setState(e.target.value);
   }
 
   const onWeightChange = (e) => {
-    setWeight(e.target.value);
+    e.target.value ? setWeight(parseFloat(e.target.value)) : setWeight('')
+  }
+
+  const onCustomerNoChange = (e) => {
+    setCustomerNo(e.target.value);
   }
 
   const onSubmit = () => {
-    let score = calculateScore(state.toUpperCase(), weight);
-    setResult(score)
+    // check for valid state
+    if (STATES.hasOwnProperty(state.toUpperCase())) {
+      let score = calculateScore(state.toUpperCase(), weight);
+      setResult(score)
+
+      if (customerNo > 0) {
+        let customer = getCustomerPref(customerNo);
+        customer ? setMemo(customer.Memo) : setMemo('');
+      }
+    } else {
+      alert("Must enter a valid state abbreviation.");
+      onClear();
+    }
   }
 
   const onClear = () => {
     setState('');
     setWeight(0.0);
     setResult('')
+    setCustomerNo(-1)
   }
 
   function calculateScore(state, weight) {
@@ -187,7 +212,7 @@ function App() {
             className="input-group-text"
             id="inputGroup-sizing-default"
           >
-            State Abbr. (not AL or HI)
+            State Abbr. (not AK or HI)*
           </span>
           <input
             type="text"
@@ -195,15 +220,19 @@ function App() {
             className="form-control"
             onChange={onStateChange}
             value={state}
-            aria-label="Sizing example input"
-            aria-describedby="inputGroup-sizing-default" />
+            aria-label="State abbr"
+            aria-describedby="inputGroup-sizing-default"
+            pattern=".{2,2}"
+            required
+            title="2 characters maximum"
+          />
         </div>
         <div className="input-group mb-3">
           <span
             className="input-group-text"
             id="inputGroup-sizing-default"
           >
-            Weight (lbs)
+            Weight (lbs)*
           </span>
           <input
             type="number"
@@ -212,42 +241,88 @@ function App() {
             className="form-control"
             onChange={onWeightChange}
             value={weight}
-            aria-label="Sizing example input"
+            required
+            aria-label="Weight"
             aria-describedby="inputGroup-sizing-default" />
         </div>
-        <div className='rowCustom'>
-          <button type="button" className="btn btn-primary custom-btn" disabled={state === '' || weight === 0} onClick={onSubmit}>
+        <div className="input-group mb-3">
+          <span
+            className="input-group-text"
+            id="inputGroup-sizing-default"
+          >
+            Customer No.
+          </span>
+          <input
+            type="number"
+            name="customerNo"
+            step="1"
+            className="form-control"
+            onChange={onCustomerNoChange}
+            value={customerNo === -1 ? '' : customerNo}
+            aria-label="Customer No"
+            aria-describedby="inputGroup-sizing-default" />
+        </div>
+        <div>
+          {(!state || !weight || state === '' || weight === 0) && (
+            <div className='colCustom'>
+              <div className="alert alert-danger d-flex align-items-center" role="alert">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
+                  <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                </svg>
+                <div>
+                  Must enter a state and weight
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+        <div className='rowCustom' style={{ paddingBottom: '25px' }}>
+          <button type="button" className="btn btn-primary custom-btn" disabled={!state || !weight || state === '' || weight === 0} onClick={onSubmit}>
             Submit
           </button>
-          <button type="button" className="btn btn-danger custom-btn" disabled={state === '' && weight === 0} onClick={onClear}>
+          <button type="button" className="btn btn-danger custom-btn" disabled={!state || !weight || state === '' && weight === 0} onClick={onClear}>
             Clear
           </button>
         </div>
       </div>
       {result !== '' && (
-        <div className='table-container'>
-          <table className="table table-striped">
-            <thead>
-              <tr>
-                <th scope="col">#</th>
-                <th scope="col">Carrier</th>
-                <th scope="col">Score</th>
-                <th scope="col">Warnings</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Object.entries(result).map(([idx, data]) => (
-                <tr key={idx}>
-                  <th scope="row">{idx}</th>
-                  <td>{data.carrier}</td>
-                  <td>{data.score === -1 ? 'No existing freight/lb cost data' : `${toFixed(data.score, 3)}`}</td>
-                  <td>
-                    {data.warnings.length > 0 ? data.warnings.join(", ") : 'N/A'}
-                  </td>
+        <div>
+          {memo !== '' && (
+            <div className='colCustom'>
+              <div className="alert alert-primary d-flex align-items-center" role="alert">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" className="bi bi-exclamation-triangle-fill flex-shrink-0 me-2" viewBox="0 0 16 16" role="img" aria-label="Warning:">
+                  <path d="M8.982 1.566a1.13 1.13 0 0 0-1.96 0L.165 13.233c-.457.778.091 1.767.98 1.767h13.713c.889 0 1.438-.99.98-1.767L8.982 1.566zM8 5c.535 0 .954.462.9.995l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 5.995A.905.905 0 0 1 8 5zm.002 6a1 1 0 1 1 0 2 1 1 0 0 1 0-2z" />
+                </svg>
+                <div>
+                  {memo}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className='table-container'>
+            <table className="table table-striped">
+              <thead>
+                <tr>
+                  <th scope="col">#</th>
+                  <th scope="col">Carrier</th>
+                  <th scope="col">Score</th>
+                  <th scope="col">Warnings</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {Object.entries(result).map(([idx, data]) => (
+                  <tr key={idx}>
+                    <th scope="row">{idx}</th>
+                    <td>{data.carrier}</td>
+                    <td>{data.score === -1 ? 'No existing freight/lb cost data' : `${toFixed(data.score, 3)}`}</td>
+                    <td>
+                      {data.warnings.length > 0 ? data.warnings.join(", ") : 'N/A'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 

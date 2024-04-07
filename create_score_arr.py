@@ -11,6 +11,7 @@ accessorials_df = pd.read_csv('./assets/Accessorials.csv')
 claims_df = pd.read_csv('./assets/Claims.csv')
 freight_cost_df = pd.read_csv('./assets/Freight_per_lb.csv')
 transit_time_df = pd.read_csv('./assets/transit_time.csv')
+customer_pref_df = pd.read_csv('./assets/customerpref.csv')
 
 # print(accessorials_df.shape)
 # print(claims_df.shape)
@@ -50,3 +51,5 @@ with open('output/scores_3d_array.txt', 'w') as output_file:
 scores_list = scores.tolist()
 with open('frontend/src/data/scores_3d_array.json', 'w') as output_file:
     json.dump(scores_list, output_file)
+
+customer_pref_df.to_json('frontend/src/data/customer_pref.json', orient='records')
